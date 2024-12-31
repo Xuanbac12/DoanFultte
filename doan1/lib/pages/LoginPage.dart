@@ -1,13 +1,13 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
-
 import 'package:doan1/compoments/my_button.dart';
 import 'package:doan1/compoments/my_textfield.dart';
-import 'package:doan1/compoments/square_tile.dart';
+import 'package:doan1/pages/DashboardPage.dart';
+import 'package:doan1/pages/RegisterPage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
-  final Function()?onTap; //Nhận call back
+  final Function()? onTap;
   LoginPage({super.key, required this.onTap});
 
   @override
@@ -15,69 +15,91 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  //text editing controllers
   final emailController = TextEditingController();
-
   final passwordController = TextEditingController();
-
-  // Form key
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  // sign user in method
-  void signUserIn(BuildContext context) async {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
 
-    //show loading circle
-    showDialog(
-     context: context,
-     builder: (context){
-      return const Center(
-        child: CircularProgressIndicator(),
+  // Check login status
+  void _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardPage()),
       );
-     },
-     );
+    }
+  }
+
+  // Save login state
+  void _saveLoginState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isLoggedIn', true);
+  }
+
+  void signUserIn(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
     if (formKey.currentState!.validate()) {
       try {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: emailController.text,
           password: passwordController.text,
         );
+        Navigator.pop(context);
+        _saveLoginState();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardPage()),
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đăng nhập thành công!')),
         );
       } catch (e) {
+        Navigator.pop(context);
         debugPrint('Đăng nhập thất bại: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đăng nhập thất bại: $e')),
         );
       }
-    };
-
-    //pop the loading circle
-    Navigator.pop(context);
-
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[300],
-      body: SafeArea(
-        child: Center(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        body: Center(
           child: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 50), //bất biến không tạo lại
-                  //logo
+                  const SizedBox(height: 50),
                   const Icon(
-                    Icons.lock,
+                    Icons.account_circle,
                     size: 100,
                   ),
-
                   const SizedBox(height: 50),
-                  //Text
                   Text(
                     'Welcome back you\'ve been missed',
                     style: TextStyle(
@@ -85,10 +107,7 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 16,
                     ),
                   ),
-
                   const SizedBox(height: 25),
-
-                  //Email textfield
                   MyTextFormField(
                     controller: emailController,
                     hintText: 'Email',
@@ -103,9 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                       return null;
                     },
                   ),
-
                   const SizedBox(height: 25),
-                  //Password textfield
                   MyTextFormField(
                     controller: passwordController,
                     hintText: 'Password',
@@ -120,8 +137,6 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 10),
-
-                  //forgot password?
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
                     child: Row(
@@ -135,17 +150,11 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 25),
-
-                  // sign in button
-
                   MyButton(
                     text: "Sign In",
                     onTap: () => signUserIn(context),
                   ),
-
                   const SizedBox(height: 50),
-
-                  // or continue with
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
                     child: Row(
@@ -172,42 +181,63 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 50),
-
-                  //google + apple sign in buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      //google button
-                      SquareTile(imagePath: 'lib/images/google.png'),
-
-                      SizedBox(width: 25),
-
-                      //facebook button
-                      SquareTile(imagePath: 'lib/images/facebook.png'),
-                    ],
-                  ),
-
-                  const SizedBox(height: 50),
-
-                  //not a member? register now
+                  const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Not a member?',
-                        style: TextStyle(color: Colors.grey[700]),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('lib/images/google.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-
-                      const SizedBox(width: 4),
-
+                      SizedBox(width: 25),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('lib/images/facebook.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 50),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       GestureDetector(
-                        onTap: widget.onTap,
-                        child: Text(
-                          'Register now',
-                          style: TextStyle(
-                              color: Colors.blue, fontWeight: FontWeight.bold),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RegisterPage(
+                                onTap: () {},
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            Text(
+                              'Not a member?',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Register now',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

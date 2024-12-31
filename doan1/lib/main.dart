@@ -1,6 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:doan1/pages/auth_page.dart';
+import 'package:doan1/pages/LoginPage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -18,9 +18,12 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return   const MaterialApp(
+    return MaterialApp(
+      useInheritedMediaQuery: true,
       debugShowCheckedModeBanner: false,
-      home: AuthPage(),
+      home: LoginPage(
+        onTap: () {},
+      ),
     );
   }
 }
